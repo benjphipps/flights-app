@@ -1,20 +1,19 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: flights-app-template
-  title: Flights Application
-  description: A template for creating a flights application based on the Summit Connect demo
+  name: flights-deploy
+  title: Deploy Flights
+  description: Create a repo with flights app manifests
   tags:
+    - gitops
+    - argocd
     - flights
-    - demo
-    - summit-connect
-    - recommended
 spec:
-  owner: user:benjphipps
+  owner: platform-team
   type: service
   
   parameters:
-    - title: Provide information about the new component
+    - title: Provide Information
       required:
         - component_id
         - owner
@@ -27,15 +26,17 @@ spec:
         description:
           title: Description
           type: string
-          description: Help others understand what this component is for
+          description: What tthis app is for
+          default: Flights application GitOps repository
         owner:
           title: Owner
           type: string
           description: Owner of the component
           ui:field: OwnerPicker
           ui:options:
-            catalogFilter:
-              kind: [Group, User]
+            allowedKinds:
+              - Group
+              - User
     
     - title: Choose a location
       required:
@@ -50,16 +51,16 @@ spec:
               - github.com
 
   steps:
-    - id: fetch-base
-      name: Fetch Base
+    - id: template
+      name: Fetch Skeleton + Template
       action: fetch:template
       input:
-        url: https://github.com/benjphipps/flights-app
+        url: ./skeleton
         values:
           component_id: ${{ parameters.component_id }}
           description: ${{ parameters.description }}
-          owner: ${{ parameters.owner }}
           destination: ${{ parameters.repoUrl | parseRepoUrl }}
+          owner: ${{ parameters.owner }}
 
     - id: publish
       name: Publish
@@ -67,15 +68,16 @@ spec:
       input:
         allowedHosts:
           - github.com
-        description: ${{ parameters.description }}
+        description: This is ${{ parameters.component_id }}
         repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: public
 
     - id: register
       name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
-        catalogInfoPath: '/catalog-info.yaml'
+        catalogInfoPath: "/catalog-info.yaml"
 
   output:
     links:
